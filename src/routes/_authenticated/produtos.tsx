@@ -431,6 +431,10 @@ function Produtos() {
                       {CATEGORY_LABEL[p.category]}
                     </TableCell>
                     <TableCell className="text-right whitespace-nowrap">{p.volume_ml}ml</TableCell>
+                    <TableCell className="text-right whitespace-nowrap">
+                      {p.price === null ? "—" : formatBRL(Number(p.price))}
+                    </TableCell>
+
                     <TableCell className="text-right font-semibold">{p.stock_qty}</TableCell>
                     <TableCell className="text-right">
                       <Input
