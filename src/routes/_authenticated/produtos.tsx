@@ -434,8 +434,16 @@ function Produtos() {
                     <TableCell className="text-right whitespace-nowrap">
                       {p.price === null ? "—" : formatBRL(Number(p.price))}
                     </TableCell>
-
                     <TableCell className="text-right font-semibold">{p.stock_qty}</TableCell>
+                    <TableCell className="text-right">
+                      {inEvents > 0 ? (
+                        <Badge variant="secondary">{inEvents}</Badge>
+                      ) : (
+                        <span className="text-muted-foreground">0</span>
+                      )}
+                    </TableCell>
+                    <TableCell className="text-right">{free}</TableCell>
+
                     <TableCell className="text-right">
                       <Input
                         type="number"
