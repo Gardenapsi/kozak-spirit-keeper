@@ -68,7 +68,7 @@ function Stat({
 function Painel() {
   const products = useQuery({ queryKey: ["products"], queryFn: fetchProducts });
   const supplies = useQuery({ queryKey: ["supplies"], queryFn: fetchSupplies });
-  const movements = useQuery({ queryKey: ["movements"], queryFn: () => fetchMovements(8) });
+  const movements = useQuery({ queryKey: ["movements", 8], queryFn: () => fetchMovements(8) });
 
   const loading = products.isLoading || supplies.isLoading;
   const prods = products.data ?? [];
