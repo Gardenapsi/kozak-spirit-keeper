@@ -58,7 +58,14 @@ import {
   type ProductCategory,
   type ProductStatus,
 } from "@/lib/inventory";
-import { productsQuery, recipesQuery, suppliesQuery } from "@/lib/queries";
+import { availableQty, formatBRL, reservedByProduct } from "@/lib/events";
+import {
+  eventItemsQuery,
+  eventsQuery,
+  productsQuery,
+  recipesQuery,
+  suppliesQuery,
+} from "@/lib/queries";
 
 export const Route = createFileRoute("/_authenticated/produtos")({
   loader: ({ context }) => {
