@@ -1,5 +1,14 @@
 import { Link, useNavigate } from "@tanstack/react-router";
-import { Boxes, LayoutDashboard, LogOut, Menu, Package, ScrollText } from "lucide-react";
+import {
+  BarChart3,
+  Boxes,
+  CalendarDays,
+  LayoutDashboard,
+  LogOut,
+  Menu,
+  Package,
+  ScrollText,
+} from "lucide-react";
 import { useState, type ReactNode } from "react";
 
 import cossaco from "@/assets/cossaco.jpg.asset.json";
@@ -12,8 +21,11 @@ const NAV = [
   { to: "/painel", label: "Painel", icon: LayoutDashboard },
   { to: "/produtos", label: "Produtos", icon: Package },
   { to: "/insumos", label: "Insumos", icon: Boxes },
+  { to: "/eventos", label: "Feiras e eventos", icon: CalendarDays },
+  { to: "/relatorios", label: "Relatórios", icon: BarChart3 },
   { to: "/movimentacoes", label: "Movimentações", icon: ScrollText },
 ] as const;
+
 
 function NavLinks({ onNavigate }: { onNavigate?: () => void }) {
   return (

@@ -58,7 +58,14 @@ import {
   type ProductCategory,
   type ProductStatus,
 } from "@/lib/inventory";
-import { productsQuery, recipesQuery, suppliesQuery } from "@/lib/queries";
+import { availableQty, formatBRL, reservedByProduct } from "@/lib/events";
+import {
+  eventItemsQuery,
+  eventsQuery,
+  productsQuery,
+  recipesQuery,
+  suppliesQuery,
+} from "@/lib/queries";
 
 export const Route = createFileRoute("/_authenticated/produtos")({
   loader: ({ context }) => {
@@ -282,6 +289,14 @@ function Produtos() {
     return map;
   }, [recipes]);
 
+  const { data: events } = useQuery(eventsQuery);
+  const { data: eventItems } = useQuery(eventItemsQuery);
+  const reserved = useMemo(
+    () => reservedByProduct(eventItems ?? [], events ?? []),
+    [eventItems, events],
+  );
+
+
   const invalidateProducts = () => queryClient.invalidateQueries({ queryKey: ["products"] });
 
   const minMutation = useMutation({
@@ -361,23 +376,27 @@ function Produtos() {
               <TableHead>Produto</TableHead>
               <TableHead>Categoria</TableHead>
               <TableHead className="text-right">Volume</TableHead>
+              <TableHead className="text-right">Preço</TableHead>
               <TableHead className="text-right">Estoque</TableHead>
+              <TableHead className="text-right">Em feiras</TableHead>
+              <TableHead className="text-right">Livre</TableHead>
               <TableHead className="text-right">Mínimo</TableHead>
               <TableHead className="text-right">Engarrafáveis</TableHead>
               <TableHead>Situação</TableHead>
               <TableHead className="text-right">Ações</TableHead>
+
             </TableRow>
           </TableHeader>
           <TableBody>
             {isLoading ? (
               <TableRow>
-                <TableCell colSpan={9} className="text-muted-foreground">
+                <TableCell colSpan={12} className="text-muted-foreground">
                   Carregando…
                 </TableCell>
               </TableRow>
             ) : rows.length === 0 ? (
               <TableRow>
-                <TableCell colSpan={9} className="text-muted-foreground">
+                <TableCell colSpan={12} className="text-muted-foreground">
                   Nenhum produto encontrado.
                 </TableCell>
               </TableRow>
@@ -387,6 +406,9 @@ function Produtos() {
                 const index = ordered.findIndex((o) => o.id === p.id);
                 const recipe = recipeByProduct.get(p.id) ?? [];
                 const possible = bottlesPossible(recipe, supplies ?? []);
+                const inEvents = reserved.get(p.id)?.qty ?? 0;
+                const free = availableQty(p.stock_qty, inEvents);
+
                 return (
                   <TableRow key={p.id}>
                     <TableCell>
@@ -409,7 +431,19 @@ function Produtos() {
                       {CATEGORY_LABEL[p.category]}
                     </TableCell>
                     <TableCell className="text-right whitespace-nowrap">{p.volume_ml}ml</TableCell>
+                    <TableCell className="text-right whitespace-nowrap">
+                      {p.price === null ? "—" : formatBRL(Number(p.price))}
+                    </TableCell>
                     <TableCell className="text-right font-semibold">{p.stock_qty}</TableCell>
+                    <TableCell className="text-right">
+                      {inEvents > 0 ? (
+                        <Badge variant="secondary">{inEvents}</Badge>
+                      ) : (
+                        <span className="text-muted-foreground">0</span>
+                      )}
+                    </TableCell>
+                    <TableCell className="text-right">{free}</TableCell>
+
                     <TableCell className="text-right">
                       <Input
                         type="number"

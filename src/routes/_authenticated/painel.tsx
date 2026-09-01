@@ -1,11 +1,20 @@
 import { useQuery } from "@tanstack/react-query";
 import { createFileRoute, Link } from "@tanstack/react-router";
-import { AlertTriangle, Boxes, CalendarClock, Package, TrendingDown } from "lucide-react";
+import {
+  AlertTriangle,
+  Boxes,
+  CalendarClock,
+  CalendarDays,
+  Package,
+  TrendingDown,
+  Wallet,
+} from "lucide-react";
 
 import { AppShell } from "@/components/app-shell";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
+import { EVENT_STATUS_LABEL, formatBRL, reservedByProduct } from "@/lib/events";
 import {
   CATEGORY_LABEL,
   fetchMovements,
@@ -16,6 +25,8 @@ import {
   stockLevel,
   SUPPLY_LABEL,
 } from "@/lib/inventory";
+import { eventItemsQuery, eventsQuery, salesQuery } from "@/lib/queries";
+
 
 export const Route = createFileRoute("/_authenticated/painel")({
   head: () => ({
@@ -81,6 +92,28 @@ function Painel() {
   const lowSupplies = sups.filter((s) => stockLevel(s.stock_qty, s.min_stock) !== "ok");
   const upcoming = prods.filter((p) => p.status === "em_breve");
 
+  const events = useQuery(eventsQuery);
+  const eventItems = useQuery(eventItemsQuery);
+  const sales = useQuery(salesQuery);
+
+  const openEvents = (events.data ?? []).filter((e) => e.status !== "finalizado");
+  const reserved = reservedByProduct(eventItems.data ?? [], events.data ?? []);
+  const reservedTotal = Array.from(reserved.values()).reduce((sum, r) => sum + r.qty, 0);
+  const revenueTotal = (sales.data ?? []).reduce((sum, s) => sum + Number(s.total), 0);
+
+  const perEvent = openEvents.map((event) => {
+    const items = (eventItems.data ?? []).filter((i) => i.event_id === event.id);
+    const qty = items.reduce(
+      (sum, i) => sum + Math.max(0, i.allocated_qty - i.sold_qty - i.returned_qty),
+      0,
+    );
+    const revenue = (sales.data ?? [])
+      .filter((s) => s.event_id === event.id)
+      .reduce((sum, s) => sum + Number(s.total), 0);
+    return { event, qty, revenue };
+  });
+
+
   return (
     <AppShell title="Painel" description="Visão geral do estoque da cachaçaria">
       {loading ? (
@@ -117,6 +150,55 @@ function Painel() {
               hint="Repor antes da próxima produção"
             />
           </div>
+
+          <div className="mt-4 grid gap-4 sm:grid-cols-2">
+            <Stat
+              label="Reservado para feiras"
+              value={reservedTotal}
+              icon={CalendarDays}
+              hint={`${openEvents.length} evento(s) em aberto`}
+            />
+            <Stat
+              label="Faturamento total"
+              value={formatBRL(revenueTotal)}
+              icon={Wallet}
+              hint="Somatório das vendas registradas"
+            />
+          </div>
+
+          {perEvent.length > 0 ? (
+            <Card className="mt-6">
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2 text-base">
+                  <CalendarDays className="size-4 text-primary" /> Estoque separado por evento
+                </CardTitle>
+              </CardHeader>
+              <CardContent className="space-y-2">
+                {perEvent.map(({ event, qty, revenue }) => (
+                  <Link
+                    key={event.id}
+                    to="/eventos/$eventId"
+                    params={{ eventId: event.id }}
+                    className="flex flex-wrap items-center justify-between gap-2 rounded-md px-3 py-2 text-sm hover:bg-muted"
+                  >
+                    <div className="min-w-0">
+                      <p className="truncate font-medium">{event.name}</p>
+                      <p className="text-xs text-muted-foreground">
+                        {event.location || "Local não informado"} ·{" "}
+                        {EVENT_STATUS_LABEL[event.status]}
+                      </p>
+                    </div>
+                    <div className="flex items-center gap-2">
+                      <Badge variant="secondary">{qty} no evento</Badge>
+                      <Badge>{formatBRL(revenue)}</Badge>
+                    </div>
+                  </Link>
+                ))}
+              </CardContent>
+            </Card>
+          ) : null}
+
+
 
           {upcoming.length > 0 ? (
             <Card className="mt-6 border-accent/40">
