@@ -375,13 +375,13 @@ function Produtos() {
           <TableBody>
             {isLoading ? (
               <TableRow>
-                <TableCell colSpan={9} className="text-muted-foreground">
+                <TableCell colSpan={12} className="text-muted-foreground">
                   Carregando…
                 </TableCell>
               </TableRow>
             ) : rows.length === 0 ? (
               <TableRow>
-                <TableCell colSpan={9} className="text-muted-foreground">
+                <TableCell colSpan={12} className="text-muted-foreground">
                   Nenhum produto encontrado.
                 </TableCell>
               </TableRow>
