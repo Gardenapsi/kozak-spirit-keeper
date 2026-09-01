@@ -14,6 +14,93 @@ export type Database = {
   }
   public: {
     Tables: {
+      event_items: {
+        Row: {
+          allocated_qty: number
+          created_at: string
+          event_id: string
+          id: string
+          product_id: string
+          returned_qty: number
+          sold_qty: number
+          unit_price: number | null
+          updated_at: string
+        }
+        Insert: {
+          allocated_qty?: number
+          created_at?: string
+          event_id: string
+          id?: string
+          product_id: string
+          returned_qty?: number
+          sold_qty?: number
+          unit_price?: number | null
+          updated_at?: string
+        }
+        Update: {
+          allocated_qty?: number
+          created_at?: string
+          event_id?: string
+          id?: string
+          product_id?: string
+          returned_qty?: number
+          sold_qty?: number
+          unit_price?: number | null
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "event_items_event_id_fkey"
+            columns: ["event_id"]
+            isOneToOne: false
+            referencedRelation: "events"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "event_items_product_id_fkey"
+            columns: ["product_id"]
+            isOneToOne: false
+            referencedRelation: "products"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      events: {
+        Row: {
+          created_at: string
+          ends_on: string | null
+          id: string
+          location: string | null
+          name: string
+          notes: string | null
+          starts_on: string | null
+          status: Database["public"]["Enums"]["event_status"]
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          ends_on?: string | null
+          id?: string
+          location?: string | null
+          name: string
+          notes?: string | null
+          starts_on?: string | null
+          status?: Database["public"]["Enums"]["event_status"]
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          ends_on?: string | null
+          id?: string
+          location?: string | null
+          name?: string
+          notes?: string | null
+          starts_on?: string | null
+          status?: Database["public"]["Enums"]["event_status"]
+          updated_at?: string
+        }
+        Relationships: []
+      }
       movements: {
         Row: {
           created_at: string
@@ -182,6 +269,60 @@ export type Database = {
         }
         Relationships: []
       }
+      sales: {
+        Row: {
+          created_at: string
+          created_by: string | null
+          event_id: string | null
+          event_name: string | null
+          id: string
+          item_name: string
+          product_id: string | null
+          quantity: number
+          total: number
+          unit_price: number
+        }
+        Insert: {
+          created_at?: string
+          created_by?: string | null
+          event_id?: string | null
+          event_name?: string | null
+          id?: string
+          item_name: string
+          product_id?: string | null
+          quantity: number
+          total?: number
+          unit_price?: number
+        }
+        Update: {
+          created_at?: string
+          created_by?: string | null
+          event_id?: string | null
+          event_name?: string | null
+          id?: string
+          item_name?: string
+          product_id?: string | null
+          quantity?: number
+          total?: number
+          unit_price?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "sales_event_id_fkey"
+            columns: ["event_id"]
+            isOneToOne: false
+            referencedRelation: "events"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "sales_product_id_fkey"
+            columns: ["product_id"]
+            isOneToOne: false
+            referencedRelation: "products"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       supplies: {
         Row: {
           created_at: string
@@ -257,6 +398,7 @@ export type Database = {
     }
     Enums: {
       app_role: "admin" | "operador"
+      event_status: "planejado" | "ativo" | "finalizado"
       movement_kind: "entrada" | "saida" | "ajuste"
       product_category: "cachaca" | "licor" | "vodka" | "edicao_limitada"
       product_status: "ativo" | "em_breve" | "descontinuado"
@@ -395,6 +537,7 @@ export const Constants = {
   public: {
     Enums: {
       app_role: ["admin", "operador"],
+      event_status: ["planejado", "ativo", "finalizado"],
       movement_kind: ["entrada", "saida", "ajuste"],
       product_category: ["cachaca", "licor", "vodka", "edicao_limitada"],
       product_status: ["ativo", "em_breve", "descontinuado"],
