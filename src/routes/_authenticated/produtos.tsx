@@ -406,6 +406,9 @@ function Produtos() {
                 const index = ordered.findIndex((o) => o.id === p.id);
                 const recipe = recipeByProduct.get(p.id) ?? [];
                 const possible = bottlesPossible(recipe, supplies ?? []);
+                const inEvents = reserved.get(p.id)?.qty ?? 0;
+                const free = availableQty(p.stock_qty, inEvents);
+
                 return (
                   <TableRow key={p.id}>
                     <TableCell>
