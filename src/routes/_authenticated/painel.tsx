@@ -92,6 +92,28 @@ function Painel() {
   const lowSupplies = sups.filter((s) => stockLevel(s.stock_qty, s.min_stock) !== "ok");
   const upcoming = prods.filter((p) => p.status === "em_breve");
 
+  const events = useQuery(eventsQuery);
+  const eventItems = useQuery(eventItemsQuery);
+  const sales = useQuery(salesQuery);
+
+  const openEvents = (events.data ?? []).filter((e) => e.status !== "finalizado");
+  const reserved = reservedByProduct(eventItems.data ?? [], events.data ?? []);
+  const reservedTotal = Array.from(reserved.values()).reduce((sum, r) => sum + r.qty, 0);
+  const revenueTotal = (sales.data ?? []).reduce((sum, s) => sum + Number(s.total), 0);
+
+  const perEvent = openEvents.map((event) => {
+    const items = (eventItems.data ?? []).filter((i) => i.event_id === event.id);
+    const qty = items.reduce(
+      (sum, i) => sum + Math.max(0, i.allocated_qty - i.sold_qty - i.returned_qty),
+      0,
+    );
+    const revenue = (sales.data ?? [])
+      .filter((s) => s.event_id === event.id)
+      .reduce((sum, s) => sum + Number(s.total), 0);
+    return { event, qty, revenue };
+  });
+
+
   return (
     <AppShell title="Painel" description="Visão geral do estoque da cachaçaria">
       {loading ? (
