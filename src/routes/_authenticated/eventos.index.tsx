@@ -25,6 +25,7 @@ import {
   DialogTitle,
   DialogTrigger,
 } from "@/components/ui/dialog";
+import { Checkbox } from "@/components/ui/checkbox";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import {
@@ -35,14 +36,18 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import {
+  allocateToEvent,
+  availableQty,
   createEvent,
   deleteEvent,
   EVENT_STATUS_LABEL,
   formatBRL,
+  reservedByProduct,
   type Event,
   type EventStatus,
 } from "@/lib/events";
-import { eventItemsQuery, eventsQuery, salesQuery } from "@/lib/queries";
+import { eventItemsQuery, eventsQuery, productsQuery, salesQuery } from "@/lib/queries";
+
 
 export const Route = createFileRoute("/_authenticated/eventos/")({
   loader: ({ context }) => {
