@@ -57,7 +57,9 @@ export function MovementDialog({
     },
     onSuccess: () => {
       toast.success("Estoque atualizado.");
-      queryClient.invalidateQueries();
+      queryClient.invalidateQueries({ queryKey: ["products"] });
+      queryClient.invalidateQueries({ queryKey: ["supplies"] });
+      queryClient.invalidateQueries({ queryKey: ["movements"] });
       setQuantity("1");
       setReason("");
       onClose();

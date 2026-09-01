@@ -65,6 +65,48 @@ export type Database = {
           },
         ]
       }
+      product_supplies: {
+        Row: {
+          created_at: string
+          id: string
+          product_id: string
+          qty_per_unit: number
+          supply_id: string
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          product_id: string
+          qty_per_unit?: number
+          supply_id: string
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          product_id?: string
+          qty_per_unit?: number
+          supply_id?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "product_supplies_product_id_fkey"
+            columns: ["product_id"]
+            isOneToOne: false
+            referencedRelation: "products"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "product_supplies_supply_id_fkey"
+            columns: ["supply_id"]
+            isOneToOne: false
+            referencedRelation: "supplies"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       products: {
         Row: {
           category: Database["public"]["Enums"]["product_category"]
@@ -76,6 +118,7 @@ export type Database = {
           name: string
           notes: string | null
           price: number | null
+          sort_order: number
           status: Database["public"]["Enums"]["product_status"]
           stock_qty: number
           updated_at: string
@@ -91,6 +134,7 @@ export type Database = {
           name: string
           notes?: string | null
           price?: number | null
+          sort_order?: number
           status?: Database["public"]["Enums"]["product_status"]
           stock_qty?: number
           updated_at?: string
@@ -106,6 +150,7 @@ export type Database = {
           name?: string
           notes?: string | null
           price?: number | null
+          sort_order?: number
           status?: Database["public"]["Enums"]["product_status"]
           stock_qty?: number
           updated_at?: string
@@ -144,6 +189,7 @@ export type Database = {
           min_stock: number
           name: string
           notes: string | null
+          sort_order: number
           stock_qty: number
           type: Database["public"]["Enums"]["supply_type"]
           unit: string
@@ -155,6 +201,7 @@ export type Database = {
           min_stock?: number
           name: string
           notes?: string | null
+          sort_order?: number
           stock_qty?: number
           type?: Database["public"]["Enums"]["supply_type"]
           unit?: string
@@ -166,6 +213,7 @@ export type Database = {
           min_stock?: number
           name?: string
           notes?: string | null
+          sort_order?: number
           stock_qty?: number
           type?: Database["public"]["Enums"]["supply_type"]
           unit?: string

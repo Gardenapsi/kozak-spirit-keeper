@@ -1,11 +1,23 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { createFileRoute } from "@tanstack/react-router";
-import { Plus } from "lucide-react";
+import { Pencil, Plus, Trash2 } from "lucide-react";
 import { useMemo, useState } from "react";
 import { toast } from "sonner";
 
 import { AppShell } from "@/components/app-shell";
 import { MovementDialog, type MovementTarget } from "@/components/movement-dialog";
+import { ReorderButtons } from "@/components/reorder-buttons";
+import { SupplyEditDialog } from "@/components/supply-edit-dialog";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import {
@@ -34,9 +46,22 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { supabase } from "@/integrations/supabase/client";
-import { fetchSupplies, stockLevel, SUPPLY_LABEL, type SupplyType } from "@/lib/inventory";
+import {
+  deleteSupply,
+  stockLevel,
+  SUPPLY_LABEL,
+  swapOrder,
+  type Supply,
+  type SupplyType,
+} from "@/lib/inventory";
+import { productsQuery, recipesQuery, suppliesQuery } from "@/lib/queries";
 
 export const Route = createFileRoute("/_authenticated/insumos")({
+  loader: ({ context }) => {
+    void context.queryClient.prefetchQuery(suppliesQuery);
+    void context.queryClient.prefetchQuery(productsQuery);
+    void context.queryClient.prefetchQuery(recipesQuery);
+  },
   head: () => ({
     meta: [
       { title: "Insumos | Estoque КОЗАКИ ГОРІЛКА" },
@@ -77,6 +102,7 @@ function NewSupplyDialog() {
         unit: form.unit.trim().slice(0, 20) || "un",
         stock_qty: Number(form.stock_qty) || 0,
         min_stock: Number(form.min_stock) || 0,
+        sort_order: 99999,
       });
       if (error) throw error;
     },
@@ -170,21 +196,66 @@ function NewSupplyDialog() {
 
 function Insumos() {
   const queryClient = useQueryClient();
-  const { data, isLoading } = useQuery({ queryKey: ["supplies"], queryFn: fetchSupplies });
+  const { data, isLoading } = useQuery(suppliesQuery);
+  const { data: products } = useQuery(productsQuery);
+  const { data: recipes } = useQuery(recipesQuery);
   const [target, setTarget] = useState<MovementTarget | null>(null);
+  const [editing, setEditing] = useState<Supply | null>(null);
+  const [removing, setRemoving] = useState<Supply | null>(null);
   const [filter, setFilter] = useState<"todos" | SupplyType>("todos");
 
+  const ordered = useMemo(() => data ?? [], [data]);
+  const filtering = filter !== "todos";
   const rows = useMemo(
-    () => (data ?? []).filter((s) => filter === "todos" || s.type === filter),
-    [data, filter],
+    () => ordered.filter((s) => filter === "todos" || s.type === filter),
+    [ordered, filter],
   );
+
+  const usedIn = useMemo(() => {
+    const names = new Map((products ?? []).map((p) => [p.id, `${p.name} ${p.volume_ml}ml`]));
+    const map = new Map<string, string[]>();
+    for (const row of recipes ?? []) {
+      const label = names.get(row.product_id);
+      if (!label) continue;
+      map.set(row.supply_id, [...(map.get(row.supply_id) ?? []), label]);
+    }
+    return map;
+  }, [products, recipes]);
+
+  const invalidate = () => queryClient.invalidateQueries({ queryKey: ["supplies"] });
 
   const minMutation = useMutation({
     mutationFn: async ({ id, min }: { id: string; min: number }) => {
       const { error } = await supabase.from("supplies").update({ min_stock: min }).eq("id", id);
       if (error) throw error;
     },
-    onSuccess: () => queryClient.invalidateQueries({ queryKey: ["supplies"] }),
+    onSuccess: invalidate,
+    onError: (e: Error) => toast.error(e.message),
+  });
+
+  const orderMutation = useMutation({
+    mutationFn: ({ index, dir }: { index: number; dir: -1 | 1 }) => {
+      const a = ordered[index];
+      const b = ordered[index + dir];
+      if (!a || !b) return Promise.resolve();
+      return swapOrder(
+        "supplies",
+        { id: a.id, sort_order: a.sort_order },
+        { id: b.id, sort_order: b.sort_order },
+      );
+    },
+    onSuccess: invalidate,
+    onError: (e: Error) => toast.error(e.message),
+  });
+
+  const deleteMutation = useMutation({
+    mutationFn: (id: string) => deleteSupply(id),
+    onSuccess: () => {
+      toast.success("Insumo excluído.");
+      setRemoving(null);
+      invalidate();
+      queryClient.invalidateQueries({ queryKey: ["product_supplies"] });
+    },
     onError: (e: Error) => toast.error(e.message),
   });
 
@@ -214,32 +285,44 @@ function Insumos() {
         <Table>
           <TableHeader>
             <TableRow>
+              <TableHead className="w-10">Ordem</TableHead>
               <TableHead>Insumo</TableHead>
               <TableHead>Tipo</TableHead>
               <TableHead className="text-right">Estoque</TableHead>
               <TableHead className="text-right">Mínimo</TableHead>
+              <TableHead>Usado em</TableHead>
               <TableHead>Situação</TableHead>
-              <TableHead className="text-right">Ação</TableHead>
+              <TableHead className="text-right">Ações</TableHead>
             </TableRow>
           </TableHeader>
           <TableBody>
             {isLoading ? (
               <TableRow>
-                <TableCell colSpan={6} className="text-muted-foreground">
+                <TableCell colSpan={8} className="text-muted-foreground">
                   Carregando…
                 </TableCell>
               </TableRow>
             ) : rows.length === 0 ? (
               <TableRow>
-                <TableCell colSpan={6} className="text-muted-foreground">
+                <TableCell colSpan={8} className="text-muted-foreground">
                   Nenhum insumo encontrado.
                 </TableCell>
               </TableRow>
             ) : (
               rows.map((s) => {
                 const level = stockLevel(s.stock_qty, s.min_stock);
+                const index = ordered.findIndex((o) => o.id === s.id);
+                const used = usedIn.get(s.id) ?? [];
                 return (
                   <TableRow key={s.id}>
+                    <TableCell>
+                      <ReorderButtons
+                        disableUp={filtering || index <= 0}
+                        disableDown={filtering || index === ordered.length - 1}
+                        onUp={() => orderMutation.mutate({ index, dir: -1 })}
+                        onDown={() => orderMutation.mutate({ index, dir: 1 })}
+                      />
+                    </TableCell>
                     <TableCell className="font-medium">{s.name}</TableCell>
                     <TableCell className="text-sm text-muted-foreground">
                       {SUPPLY_LABEL[s.type]}
@@ -260,6 +343,9 @@ function Insumos() {
                         className="ml-auto h-8 w-20 text-right"
                       />
                     </TableCell>
+                    <TableCell className="max-w-[16rem] text-xs text-muted-foreground">
+                      {used.length === 0 ? "—" : used.join(", ")}
+                    </TableCell>
                     <TableCell>
                       {level === "critico" ? (
                         <Badge variant="destructive">Sem estoque</Badge>
@@ -269,21 +355,39 @@ function Insumos() {
                         <Badge variant="outline">Ok</Badge>
                       )}
                     </TableCell>
-                    <TableCell className="text-right">
-                      <Button
-                        size="sm"
-                        variant="outline"
-                        onClick={() =>
-                          setTarget({
-                            kindOf: "supply",
-                            id: s.id,
-                            name: s.name,
-                            currentQty: s.stock_qty,
-                          })
-                        }
-                      >
-                        Movimentar
-                      </Button>
+                    <TableCell>
+                      <div className="flex items-center justify-end gap-1">
+                        <Button
+                          size="sm"
+                          variant="outline"
+                          onClick={() =>
+                            setTarget({
+                              kindOf: "supply",
+                              id: s.id,
+                              name: s.name,
+                              currentQty: s.stock_qty,
+                            })
+                          }
+                        >
+                          Movimentar
+                        </Button>
+                        <Button
+                          size="icon"
+                          variant="ghost"
+                          aria-label={`Editar ${s.name}`}
+                          onClick={() => setEditing(s)}
+                        >
+                          <Pencil className="size-4" />
+                        </Button>
+                        <Button
+                          size="icon"
+                          variant="ghost"
+                          aria-label={`Excluir ${s.name}`}
+                          onClick={() => setRemoving(s)}
+                        >
+                          <Trash2 className="size-4 text-destructive" />
+                        </Button>
+                      </div>
                     </TableCell>
                   </TableRow>
                 );
@@ -294,6 +398,32 @@ function Insumos() {
       </div>
 
       <MovementDialog target={target} onClose={() => setTarget(null)} />
+
+      {editing ? (
+        <SupplyEditDialog key={editing.id} supply={editing} onClose={() => setEditing(null)} />
+      ) : null}
+
+      <AlertDialog open={Boolean(removing)} onOpenChange={(o) => !o && setRemoving(null)}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Excluir insumo</AlertDialogTitle>
+            <AlertDialogDescription>
+              {removing?.name} será removido e desvinculado dos produtos que o utilizam.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancelar</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={(e) => {
+                e.preventDefault();
+                if (removing) deleteMutation.mutate(removing.id);
+              }}
+            >
+              Excluir
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </AppShell>
   );
 }

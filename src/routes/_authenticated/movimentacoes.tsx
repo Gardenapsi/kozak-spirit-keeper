@@ -36,7 +36,7 @@ export const Route = createFileRoute("/_authenticated/movimentacoes")({
 
 function Movimentacoes() {
   const { data, isLoading } = useQuery({
-    queryKey: ["movements"],
+    queryKey: ["movements", 300],
     queryFn: () => fetchMovements(300),
   });
 
