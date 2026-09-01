@@ -17,6 +17,7 @@ import { Route as AuthenticatedMovimentacoesRouteImport } from './routes/_authen
 import { Route as AuthenticatedPainelRouteImport } from './routes/_authenticated/painel'
 import { Route as AuthenticatedProdutosRouteImport } from './routes/_authenticated/produtos'
 import { Route as AuthenticatedEventosIndexRouteImport } from './routes/_authenticated/eventos.index'
+import { Route as AuthenticatedEventosEventIdRouteImport } from './routes/_authenticated/eventos.$eventId'
 
 const IndexRoute = IndexRouteImport.update({
   id: '/',
@@ -59,6 +60,12 @@ const AuthenticatedEventosIndexRoute =
     path: '/eventos/',
     getParentRoute: () => AuthenticatedRouteRoute,
   } as any)
+const AuthenticatedEventosEventIdRoute =
+  AuthenticatedEventosEventIdRouteImport.update({
+    id: '/eventos/$eventId',
+    path: '/eventos/$eventId',
+    getParentRoute: () => AuthenticatedRouteRoute,
+  } as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
@@ -67,6 +74,7 @@ export interface FileRoutesByFullPath {
   '/movimentacoes': typeof AuthenticatedMovimentacoesRoute
   '/painel': typeof AuthenticatedPainelRoute
   '/produtos': typeof AuthenticatedProdutosRoute
+  '/eventos/$eventId': typeof AuthenticatedEventosEventIdRoute
   '/eventos/': typeof AuthenticatedEventosIndexRoute
 }
 export interface FileRoutesByTo {
@@ -76,6 +84,7 @@ export interface FileRoutesByTo {
   '/movimentacoes': typeof AuthenticatedMovimentacoesRoute
   '/painel': typeof AuthenticatedPainelRoute
   '/produtos': typeof AuthenticatedProdutosRoute
+  '/eventos/$eventId': typeof AuthenticatedEventosEventIdRoute
   '/eventos': typeof AuthenticatedEventosIndexRoute
 }
 export interface FileRoutesById {
@@ -87,6 +96,7 @@ export interface FileRoutesById {
   '/_authenticated/movimentacoes': typeof AuthenticatedMovimentacoesRoute
   '/_authenticated/painel': typeof AuthenticatedPainelRoute
   '/_authenticated/produtos': typeof AuthenticatedProdutosRoute
+  '/_authenticated/eventos/$eventId': typeof AuthenticatedEventosEventIdRoute
   '/_authenticated/eventos/': typeof AuthenticatedEventosIndexRoute
 }
 export interface FileRouteTypes {
@@ -98,6 +108,7 @@ export interface FileRouteTypes {
     | '/movimentacoes'
     | '/painel'
     | '/produtos'
+    | '/eventos/$eventId'
     | '/eventos/'
   fileRoutesByTo: FileRoutesByTo
   to:
@@ -107,6 +118,7 @@ export interface FileRouteTypes {
     | '/movimentacoes'
     | '/painel'
     | '/produtos'
+    | '/eventos/$eventId'
     | '/eventos'
   id:
     | '__root__'
@@ -117,6 +129,7 @@ export interface FileRouteTypes {
     | '/_authenticated/movimentacoes'
     | '/_authenticated/painel'
     | '/_authenticated/produtos'
+    | '/_authenticated/eventos/$eventId'
     | '/_authenticated/eventos/'
   fileRoutesById: FileRoutesById
 }
@@ -184,6 +197,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedEventosIndexRouteImport
       parentRoute: typeof AuthenticatedRouteRoute
     }
+    '/_authenticated/eventos/$eventId': {
+      id: '/_authenticated/eventos/$eventId'
+      path: '/eventos/$eventId'
+      fullPath: '/eventos/$eventId'
+      preLoaderRoute: typeof AuthenticatedEventosEventIdRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
+    }
   }
 }
 
@@ -192,6 +212,7 @@ interface AuthenticatedRouteRouteChildren {
   AuthenticatedMovimentacoesRoute: typeof AuthenticatedMovimentacoesRoute
   AuthenticatedPainelRoute: typeof AuthenticatedPainelRoute
   AuthenticatedProdutosRoute: typeof AuthenticatedProdutosRoute
+  AuthenticatedEventosEventIdRoute: typeof AuthenticatedEventosEventIdRoute
   AuthenticatedEventosIndexRoute: typeof AuthenticatedEventosIndexRoute
 }
 
@@ -200,6 +221,7 @@ const AuthenticatedRouteRouteChildren: AuthenticatedRouteRouteChildren = {
   AuthenticatedMovimentacoesRoute: AuthenticatedMovimentacoesRoute,
   AuthenticatedPainelRoute: AuthenticatedPainelRoute,
   AuthenticatedProdutosRoute: AuthenticatedProdutosRoute,
+  AuthenticatedEventosEventIdRoute: AuthenticatedEventosEventIdRoute,
   AuthenticatedEventosIndexRoute: AuthenticatedEventosIndexRoute,
 }
 
