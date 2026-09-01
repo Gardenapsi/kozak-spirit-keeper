@@ -25,10 +25,22 @@ import {
   stockLevel,
   SUPPLY_LABEL,
 } from "@/lib/inventory";
-import { eventItemsQuery, eventsQuery, salesQuery } from "@/lib/queries";
-
+import {
+  eventItemsQuery,
+  eventsQuery,
+  productsQuery,
+  salesQuery,
+  suppliesQuery,
+} from "@/lib/queries";
 
 export const Route = createFileRoute("/_authenticated/painel")({
+  loader: ({ context }) => {
+    void context.queryClient.prefetchQuery(productsQuery);
+    void context.queryClient.prefetchQuery(suppliesQuery);
+    void context.queryClient.prefetchQuery(eventsQuery);
+    void context.queryClient.prefetchQuery(eventItemsQuery);
+    void context.queryClient.prefetchQuery(salesQuery);
+  },
   head: () => ({
     meta: [
       { title: "Painel de Estoque | КОЗАКИ ГОРІЛКА" },
