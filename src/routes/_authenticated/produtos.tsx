@@ -361,11 +361,15 @@ function Produtos() {
               <TableHead>Produto</TableHead>
               <TableHead>Categoria</TableHead>
               <TableHead className="text-right">Volume</TableHead>
+              <TableHead className="text-right">Preço</TableHead>
               <TableHead className="text-right">Estoque</TableHead>
+              <TableHead className="text-right">Em feiras</TableHead>
+              <TableHead className="text-right">Livre</TableHead>
               <TableHead className="text-right">Mínimo</TableHead>
               <TableHead className="text-right">Engarrafáveis</TableHead>
               <TableHead>Situação</TableHead>
               <TableHead className="text-right">Ações</TableHead>
+
             </TableRow>
           </TableHeader>
           <TableBody>
