@@ -54,6 +54,8 @@ export const Route = createFileRoute("/_authenticated/eventos/")({
     void context.queryClient.prefetchQuery(eventsQuery);
     void context.queryClient.prefetchQuery(eventItemsQuery);
     void context.queryClient.prefetchQuery(salesQuery);
+    void context.queryClient.prefetchQuery(productsQuery);
+
   },
   head: () => ({
     meta: [
