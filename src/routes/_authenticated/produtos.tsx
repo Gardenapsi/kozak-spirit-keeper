@@ -282,6 +282,14 @@ function Produtos() {
     return map;
   }, [recipes]);
 
+  const { data: events } = useQuery(eventsQuery);
+  const { data: eventItems } = useQuery(eventItemsQuery);
+  const reserved = useMemo(
+    () => reservedByProduct(eventItems ?? [], events ?? []),
+    [eventItems, events],
+  );
+
+
   const invalidateProducts = () => queryClient.invalidateQueries({ queryKey: ["products"] });
 
   const minMutation = useMutation({
