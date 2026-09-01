@@ -1,11 +1,23 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { createFileRoute } from "@tanstack/react-router";
-import { Plus } from "lucide-react";
+import { Pencil, Plus, Trash2 } from "lucide-react";
 import { useMemo, useState } from "react";
 import { toast } from "sonner";
 
 import { AppShell } from "@/components/app-shell";
 import { MovementDialog, type MovementTarget } from "@/components/movement-dialog";
+import { ProductEditDialog } from "@/components/product-edit-dialog";
+import { ReorderButtons } from "@/components/reorder-buttons";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import {
@@ -35,16 +47,25 @@ import {
 } from "@/components/ui/table";
 import { supabase } from "@/integrations/supabase/client";
 import {
+  bottlesPossible,
   CATEGORY_LABEL,
-  fetchProducts,
+  deleteProduct,
   monthsUntil,
   stockLevel,
   STATUS_LABEL,
+  swapOrder,
+  type Product,
   type ProductCategory,
   type ProductStatus,
 } from "@/lib/inventory";
+import { productsQuery, recipesQuery, suppliesQuery } from "@/lib/queries";
 
 export const Route = createFileRoute("/_authenticated/produtos")({
+  loader: ({ context }) => {
+    void context.queryClient.prefetchQuery(productsQuery);
+    void context.queryClient.prefetchQuery(suppliesQuery);
+    void context.queryClient.prefetchQuery(recipesQuery);
+  },
   head: () => ({
     meta: [
       { title: "Produtos | Estoque КОЗАКИ ГОРІЛКА" },
@@ -56,7 +77,7 @@ export const Route = createFileRoute("/_authenticated/produtos")({
       { property: "og:title", content: "Produtos | Estoque КОЗАКИ ГОРІЛКА" },
       {
         property: "og:description",
-        content: "Controle de garrafas por rótulo, volume e estoque mínimo.",
+        content: "Controle de garrafas por rótulo, volume, insumos e estoque mínimo.",
       },
       { property: "og:type", content: "website" },
       { name: "twitter:card", content: "summary_large_image" },
@@ -98,11 +119,12 @@ function NewProductDialog() {
         stock_qty: Number(form.stock_qty) || 0,
         min_stock: Number(form.min_stock) || 0,
         price: form.price ? Number(form.price) : null,
+        sort_order: 99999,
       });
       if (error) throw error;
     },
     onSuccess: () => {
-      toast.success("Produto cadastrado.");
+      toast.success("Produto cadastrado. Edite-o para vincular os insumos.");
       queryClient.invalidateQueries({ queryKey: ["products"] });
       setOpen(false);
       setForm({ ...form, name: "", stock_qty: "0", price: "" });
@@ -230,25 +252,70 @@ function NewProductDialog() {
 
 function Produtos() {
   const queryClient = useQueryClient();
-  const { data, isLoading } = useQuery({ queryKey: ["products"], queryFn: fetchProducts });
+  const { data, isLoading } = useQuery(productsQuery);
+  const { data: supplies } = useQuery(suppliesQuery);
+  const { data: recipes } = useQuery(recipesQuery);
   const [target, setTarget] = useState<MovementTarget | null>(null);
+  const [editing, setEditing] = useState<Product | null>(null);
+  const [removing, setRemoving] = useState<Product | null>(null);
   const [search, setSearch] = useState("");
   const [filter, setFilter] = useState<"todos" | ProductCategory>("todos");
 
-  const rows = useMemo(() => {
-    return (data ?? []).filter(
-      (p) =>
-        (filter === "todos" || p.category === filter) &&
-        p.name.toLowerCase().includes(search.toLowerCase().trim()),
-    );
-  }, [data, filter, search]);
+  const ordered = useMemo(() => data ?? [], [data]);
+  const filtering = filter !== "todos" || search.trim() !== "";
+
+  const rows = useMemo(
+    () =>
+      ordered.filter(
+        (p) =>
+          (filter === "todos" || p.category === filter) &&
+          p.name.toLowerCase().includes(search.toLowerCase().trim()),
+      ),
+    [ordered, filter, search],
+  );
+
+  const recipeByProduct = useMemo(() => {
+    const map = new Map<string, typeof recipes>();
+    for (const row of recipes ?? []) {
+      map.set(row.product_id, [...(map.get(row.product_id) ?? []), row]);
+    }
+    return map;
+  }, [recipes]);
+
+  const invalidateProducts = () => queryClient.invalidateQueries({ queryKey: ["products"] });
 
   const minMutation = useMutation({
     mutationFn: async ({ id, min }: { id: string; min: number }) => {
       const { error } = await supabase.from("products").update({ min_stock: min }).eq("id", id);
       if (error) throw error;
     },
-    onSuccess: () => queryClient.invalidateQueries({ queryKey: ["products"] }),
+    onSuccess: invalidateProducts,
+    onError: (e: Error) => toast.error(e.message),
+  });
+
+  const orderMutation = useMutation({
+    mutationFn: ({ index, dir }: { index: number; dir: -1 | 1 }) => {
+      const a = ordered[index];
+      const b = ordered[index + dir];
+      if (!a || !b) return Promise.resolve();
+      return swapOrder(
+        "products",
+        { id: a.id, sort_order: a.sort_order },
+        { id: b.id, sort_order: b.sort_order },
+      );
+    },
+    onSuccess: invalidateProducts,
+    onError: (e: Error) => toast.error(e.message),
+  });
+
+  const deleteMutation = useMutation({
+    mutationFn: (id: string) => deleteProduct(id),
+    onSuccess: () => {
+      toast.success("Produto excluído.");
+      setRemoving(null);
+      invalidateProducts();
+      queryClient.invalidateQueries({ queryKey: ["product_supplies"] });
+    },
     onError: (e: Error) => toast.error(e.message),
   });
 
@@ -280,37 +347,56 @@ function Produtos() {
         </Select>
       </div>
 
+      {filtering ? (
+        <p className="mb-3 text-xs text-muted-foreground">
+          Limpe a busca e o filtro para reordenar a lista.
+        </p>
+      ) : null}
+
       <div className="panel overflow-x-auto">
         <Table>
           <TableHeader>
             <TableRow>
+              <TableHead className="w-10">Ordem</TableHead>
               <TableHead>Produto</TableHead>
               <TableHead>Categoria</TableHead>
               <TableHead className="text-right">Volume</TableHead>
               <TableHead className="text-right">Estoque</TableHead>
               <TableHead className="text-right">Mínimo</TableHead>
+              <TableHead className="text-right">Engarrafáveis</TableHead>
               <TableHead>Situação</TableHead>
-              <TableHead className="text-right">Ação</TableHead>
+              <TableHead className="text-right">Ações</TableHead>
             </TableRow>
           </TableHeader>
           <TableBody>
             {isLoading ? (
               <TableRow>
-                <TableCell colSpan={7} className="text-muted-foreground">
+                <TableCell colSpan={9} className="text-muted-foreground">
                   Carregando…
                 </TableCell>
               </TableRow>
             ) : rows.length === 0 ? (
               <TableRow>
-                <TableCell colSpan={7} className="text-muted-foreground">
+                <TableCell colSpan={9} className="text-muted-foreground">
                   Nenhum produto encontrado.
                 </TableCell>
               </TableRow>
             ) : (
               rows.map((p) => {
                 const days = monthsUntil(p.launch_date);
+                const index = ordered.findIndex((o) => o.id === p.id);
+                const recipe = recipeByProduct.get(p.id) ?? [];
+                const possible = bottlesPossible(recipe, supplies ?? []);
                 return (
                   <TableRow key={p.id}>
+                    <TableCell>
+                      <ReorderButtons
+                        disableUp={filtering || index <= 0}
+                        disableDown={filtering || index === ordered.length - 1}
+                        onUp={() => orderMutation.mutate({ index, dir: -1 })}
+                        onDown={() => orderMutation.mutate({ index, dir: 1 })}
+                      />
+                    </TableCell>
                     <TableCell className="font-medium">
                       {p.name}
                       {p.is_premium ? (
@@ -337,6 +423,13 @@ function Produtos() {
                         className="ml-auto h-8 w-20 text-right"
                       />
                     </TableCell>
+                    <TableCell className="text-right text-sm">
+                      {possible === null ? (
+                        <span className="text-muted-foreground">—</span>
+                      ) : (
+                        <span className={possible === 0 ? "text-destructive" : ""}>{possible}</span>
+                      )}
+                    </TableCell>
                     <TableCell>
                       {p.status === "em_breve" ? (
                         <Badge variant="outline" className="border-accent text-accent">
@@ -348,21 +441,39 @@ function Produtos() {
                         levelBadge(p.stock_qty, p.min_stock)
                       )}
                     </TableCell>
-                    <TableCell className="text-right">
-                      <Button
-                        size="sm"
-                        variant="outline"
-                        onClick={() =>
-                          setTarget({
-                            kindOf: "product",
-                            id: p.id,
-                            name: `${p.name} ${p.volume_ml}ml`,
-                            currentQty: p.stock_qty,
-                          })
-                        }
-                      >
-                        Movimentar
-                      </Button>
+                    <TableCell>
+                      <div className="flex items-center justify-end gap-1">
+                        <Button
+                          size="sm"
+                          variant="outline"
+                          onClick={() =>
+                            setTarget({
+                              kindOf: "product",
+                              id: p.id,
+                              name: `${p.name} ${p.volume_ml}ml`,
+                              currentQty: p.stock_qty,
+                            })
+                          }
+                        >
+                          Movimentar
+                        </Button>
+                        <Button
+                          size="icon"
+                          variant="ghost"
+                          aria-label={`Editar ${p.name}`}
+                          onClick={() => setEditing(p)}
+                        >
+                          <Pencil className="size-4" />
+                        </Button>
+                        <Button
+                          size="icon"
+                          variant="ghost"
+                          aria-label={`Excluir ${p.name}`}
+                          onClick={() => setRemoving(p)}
+                        >
+                          <Trash2 className="size-4 text-destructive" />
+                        </Button>
+                      </div>
                     </TableCell>
                   </TableRow>
                 );
@@ -373,6 +484,39 @@ function Produtos() {
       </div>
 
       <MovementDialog target={target} onClose={() => setTarget(null)} />
+
+      {editing ? (
+        <ProductEditDialog
+          key={editing.id}
+          product={editing}
+          supplies={supplies ?? []}
+          recipe={recipeByProduct.get(editing.id) ?? []}
+          onClose={() => setEditing(null)}
+        />
+      ) : null}
+
+      <AlertDialog open={Boolean(removing)} onOpenChange={(o) => !o && setRemoving(null)}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Excluir produto</AlertDialogTitle>
+            <AlertDialogDescription>
+              {removing?.name} será removido junto com seus insumos vinculados. O histórico de
+              movimentações é mantido.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancelar</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={(e) => {
+                e.preventDefault();
+                if (removing) deleteMutation.mutate(removing.id);
+              }}
+            >
+              Excluir
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </AppShell>
   );
 }
