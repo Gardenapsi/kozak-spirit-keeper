@@ -1,11 +1,20 @@
 import { useQuery } from "@tanstack/react-query";
 import { createFileRoute, Link } from "@tanstack/react-router";
-import { AlertTriangle, Boxes, CalendarClock, Package, TrendingDown } from "lucide-react";
+import {
+  AlertTriangle,
+  Boxes,
+  CalendarClock,
+  CalendarDays,
+  Package,
+  TrendingDown,
+  Wallet,
+} from "lucide-react";
 
 import { AppShell } from "@/components/app-shell";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
+import { EVENT_STATUS_LABEL, formatBRL, reservedByProduct } from "@/lib/events";
 import {
   CATEGORY_LABEL,
   fetchMovements,
@@ -16,6 +25,8 @@ import {
   stockLevel,
   SUPPLY_LABEL,
 } from "@/lib/inventory";
+import { eventItemsQuery, eventsQuery, salesQuery } from "@/lib/queries";
+
 
 export const Route = createFileRoute("/_authenticated/painel")({
   head: () => ({
