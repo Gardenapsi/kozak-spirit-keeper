@@ -123,7 +123,7 @@ function NewProductDialog() {
         volume_ml: Number(form.volume_ml) || 750,
         status: form.status,
         launch_date: form.launch_date || null,
-        stock_qty: Number(form.stock_qty) || 0,
+        stock_qty: 0,
         min_stock: Number(form.min_stock) || 0,
         price: form.price ? Number(form.price) : null,
         sort_order: 99999,
@@ -215,15 +215,12 @@ function NewProductDialog() {
               onChange={(e) => setForm({ ...form, launch_date: e.target.value })}
             />
           </div>
-          <div className="space-y-2">
-            <Label htmlFor="pqty">Estoque inicial</Label>
-            <Input
-              id="pqty"
-              type="number"
-              min={0}
-              value={form.stock_qty}
-              onChange={(e) => setForm({ ...form, stock_qty: e.target.value })}
-            />
+          <div className="space-y-2 sm:col-span-2">
+            <p className="rounded-md border border-border bg-muted/40 p-3 text-xs text-muted-foreground">
+              O estoque começa em 0. Depois de cadastrar, vincule os insumos na edição do produto e
+              use “Movimentar” para dar entrada — a produção só é liberada com os insumos
+              necessários em estoque.
+            </p>
           </div>
           <div className="space-y-2">
             <Label htmlFor="pmin">Estoque mínimo</Label>
