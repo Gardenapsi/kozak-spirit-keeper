@@ -226,3 +226,16 @@ export async function registerSale(input: {
   });
   if (movError) throw movError;
 }
+
+/* ---------------- relatórios (admin) ---------------- */
+
+export async function deleteSale(id: string) {
+  const { error } = await supabase.from("sales").delete().eq("id", id);
+  if (error) throw error;
+}
+
+/** Apaga todos os registros de vendas (log). Não altera estoques. */
+export async function clearSales() {
+  const { error } = await supabase.from("sales").delete().not("id", "is", null);
+  if (error) throw error;
+}

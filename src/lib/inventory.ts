@@ -337,3 +337,10 @@ export function monthsUntil(date: string | null) {
   const diff = new Date(date).getTime() - Date.now();
   return Math.max(0, Math.ceil(diff / (1000 * 60 * 60 * 24)));
 }
+
+/** Apaga o relatório completo: vendas + movimentações. Não altera estoques. */
+export async function clearReports() {
+  const { clearSales } = await import("@/lib/events");
+  await clearSales();
+  await clearMovements();
+}
