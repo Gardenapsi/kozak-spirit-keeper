@@ -47,6 +47,24 @@ export function MovementDialog({
   const [quantity, setQuantity] = useState("1");
   const [reason, setReason] = useState("");
 
+  const qtyNumber = Number(quantity);
+  const production =
+    target?.kindOf === "product"
+      ? kind === "entrada"
+        ? Math.max(0, Math.round(qtyNumber || 0))
+        : kind === "ajuste"
+          ? Math.max(0, Math.round((qtyNumber || 0) - target.currentQty))
+          : 0
+      : 0;
+
+  const { data: check } = useQuery({
+    queryKey: ["supply-check", target?.id, production],
+    queryFn: () => checkSuppliesForProduction(target!.id, production),
+    enabled: Boolean(target && target.kindOf === "product" && production > 0),
+  });
+
+
+
   const mutation = useMutation({
     mutationFn: async () => {
       if (!target) return;
