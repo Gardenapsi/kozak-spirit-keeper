@@ -65,6 +65,12 @@ export function usePresence() {
       const uid = data.user?.id;
       if (!uid || cancelled) return;
 
+      const existing = supabase
+        .getChannels()
+        .find((c) => c.topic === `realtime:${PRESENCE_TOPIC}`);
+      if (existing) await supabase.removeChannel(existing);
+      if (cancelled) return;
+
       channel = supabase.channel(PRESENCE_TOPIC, {
         config: { presence: { key: uid } },
       });
