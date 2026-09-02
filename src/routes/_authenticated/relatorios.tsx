@@ -175,7 +175,42 @@ function Relatorios() {
   );
 
   return (
-    <AppShell title="Relatórios" description="Movimentações, vendas e valor em estoque">
+    <AppShell
+      title="Relatórios"
+      description="Movimentações, vendas e valor em estoque"
+      actions={
+        isAdmin ? (
+          <Button size="sm" variant="destructive" onClick={() => setConfirmClear(true)}>
+            <Trash2 className="size-4" /> Apagar relatório
+          </Button>
+        ) : null
+      }
+    >
+      <AlertDialog open={confirmClear} onOpenChange={setConfirmClear}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Apagar todo o relatório?</AlertDialogTitle>
+            <AlertDialogDescription>
+              Todas as vendas e movimentações registradas serão removidas do banco de dados. Os
+              estoques atuais de produtos e insumos não são alterados. Esta ação não pode ser
+              desfeita.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancelar</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={(e) => {
+                e.preventDefault();
+                clearAll.mutate();
+              }}
+              disabled={clearAll.isPending}
+            >
+              Apagar tudo
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+
       <div className="mb-4 grid gap-3 sm:grid-cols-3">
         <div className="space-y-2">
           <Label htmlFor="from">De</Label>
