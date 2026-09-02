@@ -141,16 +141,53 @@ export function MovementDialog({
               onChange={(e) => setReason(e.target.value)}
             />
           </div>
+
+          {check && production > 0 ? (
+            !check.hasRecipe ? (
+              <div className="rounded-md border border-destructive/50 bg-destructive/10 p-3 text-sm text-destructive">
+                Nenhum insumo vinculado a este produto. Cadastre a receita (garrafa, tampa, rótulo…)
+                na edição do produto antes de dar entrada em estoque.
+              </div>
+            ) : (
+              <div
+                className={`rounded-md border p-3 text-sm ${
+                  check.ok
+                    ? "border-border bg-muted/40 text-muted-foreground"
+                    : "border-destructive/50 bg-destructive/10 text-destructive"
+                }`}
+              >
+                <p className="font-medium">
+                  {check.ok
+                    ? `Insumos que serão baixados para produzir ${production}:`
+                    : "Insumos insuficientes para esta produção:"}
+                </p>
+                <ul className="mt-1 space-y-0.5">
+                  {check.needs.map((n) => (
+                    <li key={n.supplyId}>
+                      {n.name}: precisa {n.needed} {n.unit} · disponível {n.available}
+                    </li>
+                  ))}
+                </ul>
+              </div>
+            )
+          ) : null}
         </div>
 
         <DialogFooter>
           <Button variant="outline" onClick={onClose}>
             Cancelar
           </Button>
-          <Button onClick={() => mutation.mutate()} disabled={mutation.isPending}>
+          <Button
+            onClick={() => mutation.mutate()}
+            disabled={
+              mutation.isPending ||
+              (production > 0 && Boolean(check) && (!check!.hasRecipe || !check!.ok))
+            }
+          >
             Registrar
           </Button>
         </DialogFooter>
+
       </DialogContent>
     </Dialog>
   );
