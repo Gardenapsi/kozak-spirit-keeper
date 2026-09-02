@@ -26,7 +26,7 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { useIsAdmin } from "@/lib/admin";
-import { clearMovements, deleteMovement, fetchMovements, KIND_LABEL } from "@/lib/inventory";
+import { clearReports, deleteMovement, fetchMovements, KIND_LABEL } from "@/lib/inventory";
 
 export const Route = createFileRoute("/_authenticated/movimentacoes")({
   head: () => ({
@@ -61,6 +61,7 @@ function Movimentacoes() {
 
   const invalidate = () => {
     queryClient.invalidateQueries({ queryKey: ["movements"] });
+    queryClient.invalidateQueries({ queryKey: ["sales"] });
   };
 
   const removeOne = useMutation({
@@ -73,9 +74,9 @@ function Movimentacoes() {
   });
 
   const clearAll = useMutation({
-    mutationFn: clearMovements,
+    mutationFn: clearReports,
     onSuccess: () => {
-      toast.success("Relatório de movimentações apagado.");
+      toast.success("Relatório apagado (movimentações e vendas).");
       setConfirmClear(false);
       invalidate();
     },
@@ -160,7 +161,8 @@ function Movimentacoes() {
           <AlertDialogHeader>
             <AlertDialogTitle>Apagar todo o relatório de movimentações?</AlertDialogTitle>
             <AlertDialogDescription>
-              Todos os registros de entradas, saídas e ajustes serão removidos do banco de dados.
+              Todos os registros de entradas, saídas, ajustes e também as vendas dos relatórios
+              serão removidos do banco de dados.
               Os estoques atuais dos produtos e insumos não são alterados. Esta ação não pode ser
               desfeita.
             </AlertDialogDescription>
