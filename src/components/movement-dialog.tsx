@@ -1,4 +1,4 @@
-import { useMutation, useQueryClient } from "@tanstack/react-query";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useState } from "react";
 import { toast } from "sonner";
 
@@ -20,7 +20,13 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { KIND_LABEL, registerMovement, type MovementKind } from "@/lib/inventory";
+import {
+  checkSuppliesForProduction,
+  KIND_LABEL,
+  registerMovement,
+  type MovementKind,
+} from "@/lib/inventory";
+
 
 export type MovementTarget = {
   kindOf: "product" | "supply";
