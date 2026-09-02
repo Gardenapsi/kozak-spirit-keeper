@@ -247,6 +247,7 @@ export type Database = {
       }
       profiles: {
         Row: {
+          classification: Database["public"]["Enums"]["user_class"]
           created_at: string
           email: string | null
           full_name: string | null
@@ -254,6 +255,7 @@ export type Database = {
           updated_at: string
         }
         Insert: {
+          classification?: Database["public"]["Enums"]["user_class"]
           created_at?: string
           email?: string | null
           full_name?: string | null
@@ -261,6 +263,7 @@ export type Database = {
           updated_at?: string
         }
         Update: {
+          classification?: Database["public"]["Enums"]["user_class"]
           created_at?: string
           email?: string | null
           full_name?: string | null
@@ -409,6 +412,7 @@ export type Database = {
         | "copo"
         | "caixa_madeira"
         | "outro"
+      user_class: "master" | "subordinado" | "indefinido"
     }
     CompositeTypes: {
       [_ in never]: never
@@ -549,6 +553,7 @@ export const Constants = {
         "caixa_madeira",
         "outro",
       ],
+      user_class: ["master", "subordinado", "indefinido"],
     },
   },
 } as const
