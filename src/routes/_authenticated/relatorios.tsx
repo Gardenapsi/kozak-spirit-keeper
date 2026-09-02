@@ -1,9 +1,22 @@
-import { useQuery } from "@tanstack/react-query";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { createFileRoute } from "@tanstack/react-router";
+import { Trash2 } from "lucide-react";
 import { useMemo, useState } from "react";
+import { toast } from "sonner";
 
 import { AppShell } from "@/components/app-shell";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
 import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import {
@@ -23,7 +36,8 @@ import {
 } from "@/components/ui/table";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { effectivePrice, EVENT_STATUS_LABEL, formatBRL } from "@/lib/events";
-import { KIND_LABEL } from "@/lib/inventory";
+import { useIsAdmin } from "@/lib/admin";
+import { clearReports, KIND_LABEL } from "@/lib/inventory";
 import { eventItemsQuery, eventsQuery, movementsQuery, productsQuery, salesQuery } from "@/lib/queries";
 
 export const Route = createFileRoute("/_authenticated/relatorios")({
@@ -60,6 +74,20 @@ function Relatorios() {
   const { data: events } = useQuery(eventsQuery);
   const { data: items } = useQuery(eventItemsQuery);
   const { data: movements } = useQuery(movementsQuery);
+
+  const queryClient = useQueryClient();
+  const { data: isAdmin } = useIsAdmin();
+  const [confirmClear, setConfirmClear] = useState(false);
+  const clearAll = useMutation({
+    mutationFn: clearReports,
+    onSuccess: () => {
+      toast.success("Relatório apagado (vendas e movimentações).");
+      setConfirmClear(false);
+      queryClient.invalidateQueries({ queryKey: ["sales"] });
+      queryClient.invalidateQueries({ queryKey: ["movements"] });
+    },
+    onError: (e: Error) => toast.error(e.message),
+  });
 
   const [eventFilter, setEventFilter] = useState<string>("todos");
   const [from, setFrom] = useState("");
