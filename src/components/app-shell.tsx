@@ -8,6 +8,7 @@ import {
   Menu,
   Package,
   ScrollText,
+  Users,
 } from "lucide-react";
 import { useState, type ReactNode } from "react";
 
@@ -16,6 +17,7 @@ import { ThemeToggle } from "@/components/theme-toggle";
 import { Button } from "@/components/ui/button";
 import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet";
 import { supabase } from "@/integrations/supabase/client";
+import { useIsAdmin, usePresence } from "@/lib/admin";
 
 const NAV = [
   { to: "/painel", label: "Painel", icon: LayoutDashboard },
@@ -26,11 +28,15 @@ const NAV = [
   { to: "/movimentacoes", label: "Movimentações", icon: ScrollText },
 ] as const;
 
+const ADMIN_NAV = [{ to: "/usuarios", label: "Usuários", icon: Users }] as const;
+
 
 function NavLinks({ onNavigate }: { onNavigate?: () => void }) {
+  const { data: isAdmin } = useIsAdmin();
+  const items = isAdmin ? [...NAV, ...ADMIN_NAV] : NAV;
   return (
     <nav className="space-y-1">
-      {NAV.map(({ to, label, icon: Icon }) => (
+      {items.map(({ to, label, icon: Icon }) => (
         <Link
           key={to}
           to={to}
@@ -44,6 +50,7 @@ function NavLinks({ onNavigate }: { onNavigate?: () => void }) {
     </nav>
   );
 }
+
 
 function Brand() {
   return (
