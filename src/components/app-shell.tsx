@@ -83,6 +83,8 @@ export function AppShell({
 }) {
   const navigate = useNavigate();
   const [open, setOpen] = useState(false);
+  usePresence();
+
 
   async function signOut() {
     await supabase.auth.signOut();
