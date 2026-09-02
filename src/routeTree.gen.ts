@@ -17,6 +17,7 @@ import { Route as AuthenticatedMovimentacoesRouteImport } from './routes/_authen
 import { Route as AuthenticatedPainelRouteImport } from './routes/_authenticated/painel'
 import { Route as AuthenticatedProdutosRouteImport } from './routes/_authenticated/produtos'
 import { Route as AuthenticatedRelatoriosRouteImport } from './routes/_authenticated/relatorios'
+import { Route as AuthenticatedUsuariosRouteImport } from './routes/_authenticated/usuarios'
 import { Route as AuthenticatedEventosIndexRouteImport } from './routes/_authenticated/eventos.index'
 import { Route as AuthenticatedEventosEventIdRouteImport } from './routes/_authenticated/eventos.$eventId'
 
@@ -60,6 +61,11 @@ const AuthenticatedRelatoriosRoute = AuthenticatedRelatoriosRouteImport.update({
   path: '/relatorios',
   getParentRoute: () => AuthenticatedRouteRoute,
 } as any)
+const AuthenticatedUsuariosRoute = AuthenticatedUsuariosRouteImport.update({
+  id: '/usuarios',
+  path: '/usuarios',
+  getParentRoute: () => AuthenticatedRouteRoute,
+} as any)
 const AuthenticatedEventosIndexRoute =
   AuthenticatedEventosIndexRouteImport.update({
     id: '/eventos/',
@@ -81,6 +87,7 @@ export interface FileRoutesByFullPath {
   '/painel': typeof AuthenticatedPainelRoute
   '/produtos': typeof AuthenticatedProdutosRoute
   '/relatorios': typeof AuthenticatedRelatoriosRoute
+  '/usuarios': typeof AuthenticatedUsuariosRoute
   '/eventos/$eventId': typeof AuthenticatedEventosEventIdRoute
   '/eventos/': typeof AuthenticatedEventosIndexRoute
 }
@@ -92,6 +99,7 @@ export interface FileRoutesByTo {
   '/painel': typeof AuthenticatedPainelRoute
   '/produtos': typeof AuthenticatedProdutosRoute
   '/relatorios': typeof AuthenticatedRelatoriosRoute
+  '/usuarios': typeof AuthenticatedUsuariosRoute
   '/eventos/$eventId': typeof AuthenticatedEventosEventIdRoute
   '/eventos': typeof AuthenticatedEventosIndexRoute
 }
@@ -105,6 +113,7 @@ export interface FileRoutesById {
   '/_authenticated/painel': typeof AuthenticatedPainelRoute
   '/_authenticated/produtos': typeof AuthenticatedProdutosRoute
   '/_authenticated/relatorios': typeof AuthenticatedRelatoriosRoute
+  '/_authenticated/usuarios': typeof AuthenticatedUsuariosRoute
   '/_authenticated/eventos/$eventId': typeof AuthenticatedEventosEventIdRoute
   '/_authenticated/eventos/': typeof AuthenticatedEventosIndexRoute
 }
@@ -118,6 +127,7 @@ export interface FileRouteTypes {
     | '/painel'
     | '/produtos'
     | '/relatorios'
+    | '/usuarios'
     | '/eventos/$eventId'
     | '/eventos/'
   fileRoutesByTo: FileRoutesByTo
@@ -129,6 +139,7 @@ export interface FileRouteTypes {
     | '/painel'
     | '/produtos'
     | '/relatorios'
+    | '/usuarios'
     | '/eventos/$eventId'
     | '/eventos'
   id:
@@ -141,6 +152,7 @@ export interface FileRouteTypes {
     | '/_authenticated/painel'
     | '/_authenticated/produtos'
     | '/_authenticated/relatorios'
+    | '/_authenticated/usuarios'
     | '/_authenticated/eventos/$eventId'
     | '/_authenticated/eventos/'
   fileRoutesById: FileRoutesById
@@ -209,6 +221,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedRelatoriosRouteImport
       parentRoute: typeof AuthenticatedRouteRoute
     }
+    '/_authenticated/usuarios': {
+      id: '/_authenticated/usuarios'
+      path: '/usuarios'
+      fullPath: '/usuarios'
+      preLoaderRoute: typeof AuthenticatedUsuariosRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
+    }
     '/_authenticated/eventos/': {
       id: '/_authenticated/eventos/'
       path: '/eventos'
@@ -232,6 +251,7 @@ interface AuthenticatedRouteRouteChildren {
   AuthenticatedPainelRoute: typeof AuthenticatedPainelRoute
   AuthenticatedProdutosRoute: typeof AuthenticatedProdutosRoute
   AuthenticatedRelatoriosRoute: typeof AuthenticatedRelatoriosRoute
+  AuthenticatedUsuariosRoute: typeof AuthenticatedUsuariosRoute
   AuthenticatedEventosEventIdRoute: typeof AuthenticatedEventosEventIdRoute
   AuthenticatedEventosIndexRoute: typeof AuthenticatedEventosIndexRoute
 }
@@ -242,6 +262,7 @@ const AuthenticatedRouteRouteChildren: AuthenticatedRouteRouteChildren = {
   AuthenticatedPainelRoute: AuthenticatedPainelRoute,
   AuthenticatedProdutosRoute: AuthenticatedProdutosRoute,
   AuthenticatedRelatoriosRoute: AuthenticatedRelatoriosRoute,
+  AuthenticatedUsuariosRoute: AuthenticatedUsuariosRoute,
   AuthenticatedEventosEventIdRoute: AuthenticatedEventosEventIdRoute,
   AuthenticatedEventosIndexRoute: AuthenticatedEventosIndexRoute,
 }

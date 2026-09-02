@@ -168,6 +168,62 @@ export type MovementInput = {
   currentQty: number;
 };
 
+export type SupplyNeed = {
+  supplyId: string;
+  name: string;
+  unit: string;
+  needed: number;
+  available: number;
+};
+
+export type SupplyCheck = {
+  ok: boolean;
+  hasRecipe: boolean;
+  needs: SupplyNeed[];
+  missing: SupplyNeed[];
+};
+
+/** Verifica se há insumos suficientes para produzir `qty` unidades do produto. */
+export async function checkSuppliesForProduction(
+  productId: string,
+  qty: number,
+): Promise<SupplyCheck> {
+  const { data, error } = await supabase
+    .from("product_supplies")
+    .select("supply_id, qty_per_unit, supplies(id, name, unit, stock_qty)")
+    .eq("product_id", productId);
+  if (error) throw error;
+
+  const needs: SupplyNeed[] = [];
+  for (const row of data ?? []) {
+    const supply = row.supplies as unknown as {
+      id: string;
+      name: string;
+      unit: string;
+      stock_qty: number;
+    } | null;
+    if (!supply) continue;
+    const per = Number(row.qty_per_unit) > 0 ? Number(row.qty_per_unit) : 1;
+    needs.push({
+      supplyId: supply.id,
+      name: supply.name,
+      unit: supply.unit,
+      needed: Math.ceil(per * qty),
+      available: supply.stock_qty,
+    });
+  }
+
+  const missing = needs.filter((n) => n.available < n.needed);
+  return { ok: missing.length === 0, hasRecipe: needs.length > 0, needs, missing };
+}
+
+export function missingSuppliesMessage(missing: SupplyNeed[]) {
+  const list = missing
+    .map((m) => `${m.name} (precisa ${m.needed} ${m.unit}, tem ${m.available})`)
+    .join("; ");
+  return `Produção bloqueada: insumos insuficientes — ${list}.`;
+}
+
 export async function registerMovement(input: MovementInput) {
   const { data: userData } = await supabase.auth.getUser();
   const userId = userData.user?.id;
@@ -180,6 +236,19 @@ export async function registerMovement(input: MovementInput) {
         ? -input.quantity
         : input.quantity - input.currentQty;
   const nextQty = Math.max(0, input.currentQty + delta);
+
+  // Entrada/produção de produto só é permitida com os insumos da receita disponíveis.
+  let consume: SupplyNeed[] = [];
+  if (input.productId && delta > 0) {
+    const check = await checkSuppliesForProduction(input.productId, delta);
+    if (!check.hasRecipe) {
+      throw new Error(
+        "Nenhum insumo vinculado a este produto. Cadastre a receita (garrafa, tampa, rótulo…) antes de dar entrada em estoque.",
+      );
+    }
+    if (!check.ok) throw new Error(missingSuppliesMessage(check.missing));
+    consume = check.needs;
+  }
 
   const { error: movError } = await supabase.from("movements").insert({
     kind: input.kind,
@@ -206,8 +275,39 @@ export async function registerMovement(input: MovementInput) {
     if (error) throw error;
   }
 
+  // Baixa os insumos consumidos na produção e registra as saídas.
+  for (const need of consume) {
+    const next = Math.max(0, need.available - need.needed);
+    const { error } = await supabase
+      .from("supplies")
+      .update({ stock_qty: next })
+      .eq("id", need.supplyId);
+    if (error) throw error;
+    await supabase.from("movements").insert({
+      kind: "saida",
+      quantity: need.needed,
+      reason: `Produção de ${input.itemName}`,
+      supply_id: need.supplyId,
+      item_name: need.name,
+      created_by: userId,
+    });
+  }
+
   return nextQty;
 }
+
+/* ---------------- histórico (admin) ---------------- */
+
+export async function deleteMovement(id: string) {
+  const { error } = await supabase.from("movements").delete().eq("id", id);
+  if (error) throw error;
+}
+
+export async function clearMovements() {
+  const { error } = await supabase.from("movements").delete().not("id", "is", null);
+  if (error) throw error;
+}
+
 
 /** Quantas unidades do produto os insumos da receita permitem engarrafar. */
 export function bottlesPossible(
